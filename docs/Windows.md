@@ -68,19 +68,22 @@ Additionally, the ICU headers and libraries need to be provided for the build.
 5. When this is done, add the `<icu-source>/bin` folder to your `Path` environment variable.
 
 ### 4. Get ready
-- From within a **developer** command prompt (not PowerShell nor cmd, but [the Visual Studio Developer Command Prompt](https://msdn.microsoft.com/en-us/library/f35ctcxw.aspx)), execute the following command if you have an x64 PC.
-```
-VsDevCmd -arch=amd64
-```
-If instead, you're compiling for a 32-bit Windows target, adapt the `arch` argument to `x86` and run
-```cmd
-VsDevCmd -arch=x86
-```
-
-- Then adapt the following command and run it.
+- From within a **developer** command prompt (not PowerShell nor cmd, but [the
+Visual Studio Developer Command Prompt](https://msdn.microsoft.com/en-us/library/f35ctcxw.aspx)
+), adapt the following commands and run them. The enviroment variables will be
+used later in the build process.
 ```
 set swift_source_dir=path-to-directory-containing-all-cloned-repositories
+
+:: Examples of architectures would be `amd64`, if building for x64, or `x86` if 32-bit
+set target_arch=the-architecture-of-the-machine-you're-building-swift-for
 ```
+
+- Execute
+```
+VsDevCmd -arch="%target_arch%"
+```
+
 
 ### 5. Build CMark
 - This must be done from within a developer command prompt. CMark is a fairly small project and should only take a few minutes to build.
@@ -115,7 +118,7 @@ cmake --build "%swift_source_dir%/build/Ninja-DebugAssert/llvm-windows-amd64"
 
 ### 7. Build Swift
 - This must be done from within a developer command prompt and could take up to two hours depending on your system.
-- You may need to adjust the SWIFT_WINDOWS_LIB_DIRECTORY parameter depending on your target platform or Windows SDK version.
+- You may need to adjust the `SWIFT_WINDOWS_LIB_DIRECTORY` parameter depending on your target platform or Windows SDK version.
 - While the commands here use MSVC to build, using clang-cl is recommended (see the **Clang-cl** section below).
 ```
 mkdir "%swift_source_dir%/build/Ninja-DebugAssert/swift-windows-amd64/ninja"
