@@ -59,23 +59,28 @@ separate_arguments(SWIFT_GYB_FLAGS WINDOWS_COMMAND "${SWIFT_GYB_FLAGS}")
   endforeach()
   list(REMOVE_DUPLICATES gyb_expand_deps)
 
-  add_custom_command_target(
-      dependency_target
+  add_custom_command_target(dependency_target
       COMMAND
-          "${CMAKE_COMMAND}" -E make_directory "${dir}"
+        "${CMAKE_COMMAND}" -E make_directory "${dir}"
       COMMAND
-          "${PYTHON_EXECUTABLE}" "${gyb_tool}" "${gyb_flags}"
-          -o "${GYB_SINGLE_OUTPUT}.tmp" "${GYB_SINGLE_SOURCE}"
+        "${PYTHON_EXECUTABLE}" "${gyb_tool}" "${gyb_flags}" -o "${GYB_SINGLE_OUTPUT}.tmp" "${GYB_SINGLE_SOURCE}"
       COMMAND
-          "${CMAKE_COMMAND}" -E copy_if_different
-          "${GYB_SINGLE_OUTPUT}.tmp" "${GYB_SINGLE_OUTPUT}"
+        "${CMAKE_COMMAND}" -E copy_if_different "${GYB_SINGLE_OUTPUT}.tmp" "${GYB_SINGLE_OUTPUT}"
       COMMAND
-          "${CMAKE_COMMAND}" -E remove "${GYB_SINGLE_OUTPUT}.tmp"
-      OUTPUT "${GYB_SINGLE_OUTPUT}"
-      DEPENDS "${gyb_tool_source}" "${GYB_SINGLE_DEPENDS}" "${GYB_SINGLE_SOURCE}" "${gyb_expand_deps}"
-      COMMENT "Generating ${basename} from ${GYB_SINGLE_SOURCE} ${GYB_SINGLE_COMMENT}"
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-      SOURCES "${GYB_SINGLE_SOURCE}"
+        "${CMAKE_COMMAND}" -E remove "${GYB_SINGLE_OUTPUT}.tmp"
+      OUTPUT
+        "${GYB_SINGLE_OUTPUT}"
+      DEPENDS
+        "${gyb_tool_source}"
+        "${GYB_SINGLE_DEPENDS}"
+        "${GYB_SINGLE_SOURCE}"
+        "${gyb_expand_deps}"
+      COMMENT
+        "Generating ${basename} from ${GYB_SINGLE_SOURCE} ${GYB_SINGLE_COMMENT}"
+      WORKING_DIRECTORY
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+      SOURCES
+        "${GYB_SINGLE_SOURCE}"
       VERBATIM)
   set("${dependency_out_var_name}" "${dependency_target}" PARENT_SCOPE)
 endfunction()
