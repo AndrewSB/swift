@@ -7,7 +7,7 @@
 // Tests for traps at run time when enforcing exclusive access.
 
 import StdlibUnittest
-import SwiftPrivatePthreadExtras
+import SwiftPrivateThreadExtras
 
 struct X {
   var i = 7
@@ -114,12 +114,11 @@ ExclusiveAccessTestSuite.test("ClosureCaptureReadRead") {
 // have overlapping accesses
 ExclusiveAccessTestSuite.test("PerThreadEnforcement") {
   modifyAndPerform(&globalX) {
-    let (_, otherThread) = _stdlib_pthread_create_block(nil, { (_ : Void) -> () in
-      globalX.i = 12 // no-trap
-      return ()
-    }, ())
-
-    _ = _stdlib_pthread_join(otherThread!, Void.self)
+    let otherThread = _Thread(Void) {
+        globalX.i = 12 // no-trap
+        return ()
+    }
+    (_, _) = otherThread.join()
   }
 }
 

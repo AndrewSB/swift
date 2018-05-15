@@ -6,7 +6,6 @@
 // REQUIRES: OS=macosx
 
 import StdlibUnittest
-import SwiftPrivatePthreadExtras
 import Foundation
 
 struct X {

@@ -3,11 +3,13 @@
 // REQUIRES: stress_test
 
 import StdlibUnittest
-import SwiftPrivatePthreadExtras
+import SwiftPrivateThreadExtras
 #if os(OSX) || os(iOS)
 import Darwin
-#elseif os(Linux)
+#elseif os(Linux) || os(Cygwin) || os(Android)
 import Glibc
+#elseif os(Windows)
+import MSVCRT
 #endif
 
 
@@ -35,13 +37,13 @@ enum ThreadID {
   case Secondary
 }
 
-var barrierVar: UnsafeMutablePointer<_stdlib_pthread_barrier_t>?
+var barrierVar: _ThreadBarrier?
 var sharedString: String = ""
 var secondaryString: String = ""
 
 func barrier() {
-  var ret = _stdlib_pthread_barrier_wait(barrierVar!)
-  expectTrue(ret == 0 || ret == _stdlib_PTHREAD_BARRIER_SERIAL_THREAD)
+  var ret = barrierVar!.wait()
+  expectTrue(ret == 0 || ret == _ThreadBarrier.BARRIER_SERIAL_THREAD_CODE)
 }
 
 func sliceConcurrentAppendThread(_ tid: ThreadID) {
@@ -88,30 +90,18 @@ func sliceConcurrentAppendThread(_ tid: ThreadID) {
 }
 
 StringTestSuite.test("SliceConcurrentAppend") {
-  barrierVar = UnsafeMutablePointer.allocate(capacity: 1)
-  barrierVar!.initialize(to: _stdlib_pthread_barrier_t())
-  var ret = _stdlib_pthread_barrier_init(barrierVar!, nil, 2)
-  expectEqual(0, ret)
+  barrierVar = _ThreadBarrier(withNumThreads: 2)!
 
-  let (createRet1, tid1) = _stdlib_pthread_create_block(
-    nil, sliceConcurrentAppendThread, .Primary)
-  let (createRet2, tid2) = _stdlib_pthread_create_block(
-    nil, sliceConcurrentAppendThread, .Secondary)
+  let primaryThread = _Thread(.Primary, sliceConcurrentAppendThread)
+  let secondaryThread = _Thread(.Secondary, sliceConcurrentAppendThread)
 
-  expectEqual(0, createRet1)
-  expectEqual(0, createRet2)
-
-  let (joinRet1, _) = _stdlib_pthread_join(tid1!, Void.self)
-  let (joinRet2, _) = _stdlib_pthread_join(tid2!, Void.self)
+  let (joinRet1, _) = primaryThread.join()
+  let (joinRet2, _) = secondaryThread.join()
 
   expectEqual(0, joinRet1)
   expectEqual(0, joinRet2)
 
-  ret = _stdlib_pthread_barrier_destroy(barrierVar!)
-  expectEqual(0, ret)
-
-  barrierVar!.deinitialize(count: 1)
-  barrierVar!.deallocate()
+  expectEqual(0, barrierVar!.destroy())
 }
 
 runAllTests()

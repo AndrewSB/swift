@@ -394,7 +394,7 @@ class _RaceTestSharedState<RT : RaceTestWithPerTrialData> {
   var racingThreadCount: Int
   var stopNow = _stdlib_AtomicInt(0)
 
-  var trialBarrier: _stdlib_Barrier
+  var trialBarrier: _ThreadBarrier
   var trialSpinBarrier: _stdlib_AtomicInt = _stdlib_AtomicInt()
 
   var raceData: [RT.RaceData] = []
@@ -404,7 +404,7 @@ class _RaceTestSharedState<RT : RaceTestWithPerTrialData> {
 
   init(racingThreadCount: Int) {
     self.racingThreadCount = racingThreadCount
-    self.trialBarrier = _stdlib_Barrier(threadCount: racingThreadCount + 1)
+    self.trialBarrier = _ThreadBarrier(withNumThreads: racingThreadCount + 1)
 
     self.workerStates.reserveCapacity(racingThreadCount)
     for _ in 0..<racingThreadCount {
@@ -600,43 +600,35 @@ public func runRaceTest<RT : RaceTestWithPerTrialData>(
     _ = timeoutReached.fetchAndAdd(1)
   }
 
-  var testTids = [pthread_t]()
-  var alarmTid: pthread_t
+  var testThreads = [_Thread]()
+  var alarmThread: _Thread
 
   // Create the master thread.
   do {
-    let (ret, tid) = _stdlib_pthread_create_block(
-      nil, masterThreadBody, ())
-    expectEqual(0, ret)
-    testTids.append(tid!)
+    testThreads.append(_Thread(argument: Void, block: masterThreadBody))
   }
 
   // Create racing threads.
   for i in 0..<racingThreadCount {
-    let (ret, tid) = _stdlib_pthread_create_block(
-      nil, racingThreadBody, i)
-    expectEqual(0, ret)
-    testTids.append(tid!)
+    testThreads.append(_Thread(argument: Void, block: racingThreadBody))
   }
 
   // Create the alarm thread that enforces the timeout.
+
   do {
-    let (ret, tid) = _stdlib_pthread_create_block(
-      nil, alarmThreadBody, ())
-    expectEqual(0, ret)
-    alarmTid = tid!
+    alarmTid = _Thread(argument: Void, block: alarmThreadBody)
   }
 
   // Join all testing threads.
-  for tid in testTids {
-    let (ret, _) = _stdlib_pthread_join(tid, Void.self)
+  for thread in testThreads {
+    let (ret, _) = thread.join()
     expectEqual(0, ret)
   }
 
   // Tell the alarm thread to stop if it hasn't already, then join it.
   do {
     alarmTimer.wake()
-    let (ret, _) = _stdlib_pthread_join(alarmTid, Void.self)
+    let (ret, _) = alarmThread.join()
     expectEqual(0, ret)
   }
 
